@@ -1,0 +1,104 @@
+package main
+
+import (
+	"fmt"
+	"net"
+
+	"golang.org/x/crypto/bcrypt"
+
+	"database/sql"
+	_ "github.com/go-sql-driver/mysql"
+)
+
+type User struct {
+	ID         int64
+	Username   string //用户名，*代表匿名用户
+	Password   string //bcrypt加密密码, 用`htpasswd -nBb 用户名 密码`生成
+	Privileges []Privilege
+}
+
+func (u *User) Authorize(ip net.IP, scopes []AuthScope) ([]ResourceActions, error) {
+	if err := u.LoadPrivileges(); err != nil {
+		return nil, fmt.Errorf("Load privileges failed: %s", err)
+	}
+
+	resourceActions := []ResourceActions{}
+	for _, scope := range scopes {
+		ownedActionMap := map[string]bool{}
+		for _, p := range u.Privileges {
+			actions := p.AuthorizedActions(scope.Category, scope.RepoName, ip)
+			for _, a := range actions {
+				ownedActionMap[a] = true
+			}
+		}
+
+		//Action只需要给出用户已有权限和申请权限的交集即可，不需要验证
+		//Refer: https://docs.docker.com/registry/spec/auth/token/
+		actions := []string{}
+		if len(ownedActionMap) >= 0 {
+			for _, a := range scope.Actions {
+				_, found := ownedActionMap[a]
+				if found {
+					actions = append(actions, a)
+				}
+			}
+		}
+
+		resourceAction := ResourceActions{
+			Actions: actions,
+			Name:    scope.RepoName,
+			Type:    scope.Category,
+		}
+		resourceActions = append(resourceActions, resourceAction)
+	}
+	return resourceActions, nil
+}
+
+func GetUser(username, password string) (User, error) {
+	u := User{}
+
+	if err := connectDb(); err != nil {
+		return u, err
+	}
+
+	row := dbConn.QueryRow("SELECT id,username,password FROM `"+CfgUserTableName+"` WHERE username=?", username)
+	err := row.Scan(&u.ID, &u.Username, &u.Password)
+	if err == sql.ErrNoRows {
+		return u, fmt.Errorf("User not exists")
+	}
+
+	if err != nil {
+		return u, fmt.Errorf("Query error: %s", err)
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
+	if err != nil {
+		return u, fmt.Errorf("Invalid password: %s", err)
+	}
+
+	return u, nil
+}
+
+func (u *User) LoadPrivileges() error {
+	if err := connectDb(); err != nil {
+		return err
+	}
+
+	rows, err := dbConn.Query("SELECT host,action,repo,category FROM `"+CfgPrivilegeTableName+"` WHERE user_id=?", u.ID)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	u.Privileges = make([]Privilege, 0)
+	for rows.Next() {
+		p := Privilege{}
+		err := rows.Scan(&p.Host, &p.Action, &p.Repo, &p.Category)
+		if err != nil {
+			return err
+		}
+		u.Privileges = append(u.Privileges, p)
+	}
+
+	return rows.Err()
+}
