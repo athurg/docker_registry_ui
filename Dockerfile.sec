@@ -1,0 +1,16 @@
+# vim: ft=Dockerfile
+FROM scratch
+MAINTAINER Feng Jianbo <fengjianbo@nibirutech.com>
+
+ENV DSN ""
+ENV LISTEN_ADDR ":80"
+ENV TOKEN_ISSUER "AuthServer"
+ENV KEY_PEM_BLOCK ""
+ENV CERT_PEM_BLOCK ""
+ENV USER_TABLE_NAME "users"
+ENV PRIVILEGE_TABLE_NAME "privileges"
+ENV TOKEN_EXPIRATION "900"
+ENV DSN "user:pass@tcp(host:port)/dbname?charset=utf8&parseTime=True&loc=Local"
+
+ADD go/bin/app /
+CMD ["/app"]
