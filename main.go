@@ -63,6 +63,7 @@ func ParseRequest(req *http.Request) (*AuthRequest, error) {
 		return nil, fmt.Errorf("user and account are not the same (%q vs %q)", authReq.Account, account)
 	}
 
+	//TODO: 也许可以尝试校验Service
 	authReq.Service = req.FormValue("service")
 
 	for _, scopeStr := range req.Form["scope"] {
