@@ -138,7 +138,7 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	err := LoadCertAndKey()
 	if err != nil {
-		log.Fatal("Failed to parse cert and key, which is required when generate token")
+		log.Fatalf("Failed to parse cert and key: %s", err)
 	}
 
 	http.HandleFunc("/", IndexHandler)

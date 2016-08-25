@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"strings"
 	"strconv"
 )
 
@@ -19,12 +20,13 @@ var (
 
 func init() {
 	if v := os.Getenv("KEY_PEM_BLOCK"); v != "" {
-		CfgKeyPEMBlock = []byte(v)
+		CfgKeyPEMBlock = []byte(strings.Replace(v,"\\n","\n",-1))
 	}
 
 	if v := os.Getenv("CERT_PEM_BLOCK"); v != "" {
-		CfgCertPEMBlock = []byte(v)
+		CfgCertPEMBlock = []byte(strings.Replace(v,"\\n","\n",-1))
 	}
+
 
 	if v := os.Getenv("DSN"); v != "" {
 		CfgDSN = v
