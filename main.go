@@ -45,6 +45,10 @@ func ParseRequest(req *http.Request) (*AuthRequest, error) {
 		return nil, fmt.Errorf("invalid form value")
 	}
 
+	if realAddr := req.Header.Get("X-Forwarded-For"); realAddr != "" {
+		req.RemoteAddr = realAddr
+	}
+
 	ip := parseRemoteAddr(req.RemoteAddr)
 	if ip == nil {
 		return nil, fmt.Errorf("unable to parse remote addr %s", req.RemoteAddr)
