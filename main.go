@@ -102,6 +102,12 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("[INFO]%s请求授权服务%s, %s", ar.Account, ar.Service, ar.Scopes)
 
+	if len(ar.Account) == 1 {
+		log.Printf("用户名长度必须大于1(非匿名用户)或等于0(匿名用户): %s", ar.Account)
+		http.Error(w, fmt.Sprintf("Invalid username %s, length must large than 1", ar.Account), http.StatusUnauthorized)
+		return
+	}
+
 	//用户鉴定
 	if ar.Account == "" {
 		ar.Account = "*"
@@ -117,7 +123,6 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 	authzResults := []ResourceActions{}
 	if len(ar.Scopes) > 0 {
 		authzResults, err = u.Authorize(ar.RemoteIP, ar.Scopes)
-		//authzResults, err = Authorize(ar)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Authorization failed (%s)", err), http.StatusInternalServerError)
 			return

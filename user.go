@@ -71,9 +71,12 @@ func GetUser(username, password string) (User, error) {
 		return u, fmt.Errorf("Query error: %s", err)
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
-	if err != nil {
-		return u, fmt.Errorf("Invalid password: %s", err)
+	//非匿名用户需要检查密码
+	if username != "*" {
+		err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
+		if err != nil {
+			return u, fmt.Errorf("Invalid password: %s", err)
+		}
 	}
 
 	return u, nil
