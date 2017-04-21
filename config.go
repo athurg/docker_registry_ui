@@ -10,6 +10,7 @@ var (
 	CfgKeyPEMBlock  []byte
 	CfgCertPEMBlock []byte
 
+	CfgRegistryAddr       string = "localhost:5000"
 	CfgListenAddr         string = ":8080"
 	CfgTokenIssuer        string = "Tap4Fun"
 	CfgTokenExpiration    int64  = 10000000
@@ -29,6 +30,10 @@ func init() {
 
 	if v := os.Getenv("DSN"); v != "" {
 		CfgDSN = v
+	}
+
+	if v := os.Getenv("REGISTRY_ADDR"); v != "" {
+		CfgRegistryAddr = v
 	}
 
 	if v := os.Getenv("LISTEN_ADDR"); v != "" {
