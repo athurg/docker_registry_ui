@@ -7,6 +7,7 @@ import (
 func LoadWebServer(addr string) {
 	http.HandleFunc("/", IndexHandler)
 	http.HandleFunc("/auth", AuthHandler)
+	http.HandleFunc("/view", ViewHandler)
 
 	http.ListenAndServe(addr, nil)
 }
