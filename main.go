@@ -144,12 +144,14 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(result)
 }
 
-func main() {
+func init() {
 	err := LoadCertAndKey()
 	if err != nil {
 		log.Fatalf("Failed to parse cert and key: %s", err)
 	}
+}
 
+func main() {
 	http.HandleFunc("/", IndexHandler)
 	http.HandleFunc("/auth", AuthHandler)
 
