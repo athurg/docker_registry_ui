@@ -6,6 +6,14 @@ import (
 	"net/http"
 )
 
+type BaseResponse struct {
+	Errors []struct {
+		Code    int
+		Message string
+		Detail  string
+	}
+}
+
 //基础的HTTP请求，自动将Token加入Header中
 func (cli *Client) Request(path, token string, result interface{}) error {
 	return cli.RequestWithHeader(path, token, http.Header{}, result)

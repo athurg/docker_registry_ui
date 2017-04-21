@@ -1,6 +1,7 @@
 package registry
 
 type TagsListResponse struct {
+	BaseResponse
 	Name string
 	Tags []string
 }

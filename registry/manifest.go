@@ -44,6 +44,8 @@ type History struct {
 }
 
 type ImageManifest struct {
+	BaseResponse
+
 	SchemaVersion int
 
 	//以下为SchemaVersion=2时才有的字段

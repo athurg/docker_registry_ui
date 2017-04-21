@@ -1,6 +1,7 @@
 package registry
 
 type CatalogResponseInfo struct {
+	BaseResponse
 	Repositories []string
 }
 
