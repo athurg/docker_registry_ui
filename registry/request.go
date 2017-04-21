@@ -8,7 +8,12 @@ import (
 
 //基础的HTTP请求，自动将Token加入Header中
 func (cli *Client) Request(path, token string, result interface{}) error {
+	return cli.RequestWithHeader(path, token, http.Header{}, result)
+}
+
+func (cli *Client) RequestWithHeader(path, token string, header http.Header, result interface{}) error {
 	req, err := http.NewRequest("GET", cli.Addr+path, nil)
+	req.Header = header
 	if token != "" {
 		req.Header.Add("Authorization", "Bearer "+token)
 	}
