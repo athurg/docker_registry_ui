@@ -14,7 +14,7 @@ type BaseResponse struct {
 	Errors []struct {
 		Code    string
 		Message string
-		Detail  map[string]interface{}
+		Detail  interface{}
 	}
 }
 
