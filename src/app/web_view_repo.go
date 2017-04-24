@@ -97,7 +97,7 @@ func ViewRepoHandler(w http.ResponseWriter, r *http.Request) {
 		html += "<td><a href='/view/image?name=" + info.Name + "'>" + info.Tag + "</a></td>"
 		html += "<td>" + info.Created.Format("2006-01-02 15:04:05") + "</td>"
 		html += fmt.Sprintf("<td>%d</td>", info.LayerCount)
-		html += fmt.Sprintf("<td>%d</td>", info.Size)
+		html += fmt.Sprintf("<td>%s</td>", HumanSize(info.Size))
 		html += "</tr>"
 	}
 	html += `</tbody></table></div>`
