@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"./registry"
+	"registry"
 )
 
 //每一层信息

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"./registry"
+	"registry"
 	"log"
 )
 
