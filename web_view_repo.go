@@ -30,28 +30,28 @@ func getRepoTagList(repo string) ([]ImageBaseInfo, error) {
 	result := make([]ImageBaseInfo, 0)
 
 	for _, tag := range info.Tags {
-		info1, err := registryClient.GetImageManifestV1(repo, tag, token)
+		manifest, err := registryClient.ImageManifestV2(repo, tag, token)
 		if err != nil {
 			return nil, fmt.Errorf("获取仓库标签(%s:%s)详情错误: %s", repo, tag, err)
 		}
 
-		info2, err := registryClient.GetImageManifestV2(repo, tag, token)
+		config, err := registryClient.ImageConfigByDigest(repo, manifest.Config.Digest, token)
 		if err != nil {
 			return nil, fmt.Errorf("获取仓库标签(%s:%s)详情错误: %s", repo, tag, err)
 		}
 
 		totalSize := 0
-		for _, layer := range info2.Layers {
+		for _, layer := range manifest.Layers {
 			totalSize += layer.Size
 		}
-		topLayer := info1.History[0]
+
 		result = append(result, ImageBaseInfo{
-			Id:         info1.History[0].Id,
+			Id:         manifest.Config.Digest[7:],
 			Name:       repo + ":" + tag,
 			Tag:        tag,
 			Repo:       repo,
-			Created:    topLayer.Created,
-			LayerCount: len(info2.Layers),
+			Created:    config.Created,
+			LayerCount: len(manifest.Layers),
 			Size:       totalSize,
 		})
 	}
@@ -93,7 +93,7 @@ func ViewRepoHandler(w http.ResponseWriter, r *http.Request) {
 	`
 	for _, info := range result {
 		html += "<tr>"
-		html += "<td>" + info.Id[:11] + "</td>"
+		html += "<td>" + info.Id[:12] + "</td>"
 		html += "<td><a href='/view/image?name=" + info.Name + "'>" + info.Tag + "</a></td>"
 		html += "<td>" + info.Created.Format("2006-01-02 15:04:05") + "</td>"
 		html += fmt.Sprintf("<td>%d</td>", info.LayerCount)

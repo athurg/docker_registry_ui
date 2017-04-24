@@ -6,12 +6,29 @@ import (
 	"net/http"
 )
 
+type BaseResponser interface {
+	Error() error
+}
+
 type BaseResponse struct {
 	Errors []struct {
-		Code    int
+		Code    string
 		Message string
-		Detail  string
+		Detail  map[string]interface{}
 	}
+}
+
+func (resp *BaseResponse) Error() error {
+	if len(resp.Errors) == 0 {
+		return nil
+	}
+
+	var str string
+	for _, errInfo := range resp.Errors {
+		str += fmt.Sprintf("%s: %s (%s) ", errInfo.Code, errInfo.Message, errInfo.Detail)
+	}
+
+	return fmt.Errorf("%s", str)
 }
 
 //基础的HTTP请求，自动将Token加入Header中
@@ -35,6 +52,10 @@ func (cli *Client) RequestWithHeader(path, token string, header http.Header, res
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	if err != nil {
 		return fmt.Errorf("读取错误:", err)
+	}
+
+	if r, ok := result.(BaseResponser); ok {
+		return r.Error()
 	}
 
 	return nil

@@ -10,25 +10,24 @@ import (
 
 //每一层信息
 //镜像commit、命令
-
-func getImageManifest(repo, ref string) (registry.ImageManifest, registry.ImageManifest, error) {
+func getImageInfo(repo, ref string) (registry.ManifestV2, registry.ImageConfig, error) {
 	resourceAction := ResourceActions{Type: "repository", Name: repo, Actions: []string{"pull"}}
 	token, err := CreateToken("", CfgTokenService, []ResourceActions{resourceAction})
 	if err != nil {
-		return registry.ImageManifest{}, registry.ImageManifest{}, fmt.Errorf("创建Token错误: %s", err)
+		return registry.ManifestV2{}, registry.ImageConfig{}, fmt.Errorf("创建Token错误: %s", err)
 	}
 
-	info2, err := registryClient.GetImageManifestV2(repo, ref, token)
+	manifest, err := registryClient.ImageManifestV2(repo, ref, token)
 	if err != nil {
-		return registry.ImageManifest{}, registry.ImageManifest{}, fmt.Errorf("获取仓库标签错误: %s", err)
+		return registry.ManifestV2{}, registry.ImageConfig{}, fmt.Errorf("获取Manifest错误: %s", err)
 	}
 
-	info, err := registryClient.GetImageManifestV1(repo, ref, token)
+	config, err := registryClient.ImageConfigByDigest(repo, manifest.Config.Digest, token)
 	if err != nil {
-		return registry.ImageManifest{}, registry.ImageManifest{}, fmt.Errorf("获取仓库容器配置标签错误: %s", err)
+		return registry.ManifestV2{}, registry.ImageConfig{}, fmt.Errorf("获取配置错误: %s", err)
 	}
 
-	return info, info2, nil
+	return manifest, config, nil
 }
 
 func ViewImageHandler(w http.ResponseWriter, r *http.Request) {
@@ -46,36 +45,43 @@ func ViewImageHandler(w http.ResponseWriter, r *http.Request) {
 	repo := slice[0]
 	ref := slice[1]
 
-	info, info2, err := getImageManifest(repo, ref)
+	manifest, config, err := getImageInfo(repo, ref)
 	if err != nil {
 		html += "<h3>" + err.Error() + "</h3>"
 		w.Write([]byte(html))
 		return
 	}
 
-	//
-	sizeByDigest := make(map[string]int)
-	for _, layer := range info2.Layers {
-		sizeByDigest[layer.Digest] = layer.Size
-	}
-
 	var tbody string
 	var totalSize int
-	for i, history := range info.History {
-		tbody += "<tr>"
-		tbody += fmt.Sprintf("<td>%s</td>", history.Id[:11])
-		size := sizeByDigest[info.FsLayers[i].BlobSum]
-		tbody += fmt.Sprintf("<td>%d</td>", size)
-		tbody += fmt.Sprintf("<td>%s</td>", history.Author)
-		tbody += fmt.Sprintf("<td>%s</td>", history.Created.Format("2006-01-02 15:04:05"))
 
-		cmd := strings.Join(history.ContainerConfig.Cmd, "")
+	var layerIdx int
+
+	for _, history := range config.History {
+		var size int
+		if !history.EmptyLayer {
+			size = manifest.Layers[layerIdx].Size
+			layerIdx += 1
+		}
+
+		totalSize += size
+
+		author := config.Author
+		if history.Author != "" {
+			author = history.Author
+		}
+
+		cmd := history.CreatedBy
 		if len(cmd) > 40 {
 			cmd = cmd[:40] + "..."
 		}
-		tbody += fmt.Sprintf("<td>%s</td>", cmd)
 
-		totalSize += sizeByDigest[info.FsLayers[i].BlobSum]
+		tbody += "<tr>"
+		tbody += fmt.Sprintf("<td>%s</td>", history.Created.Format("2006-01-02 15:04:05"))
+		tbody += fmt.Sprintf("<td>%s</td>", cmd)
+		tbody += fmt.Sprintf("<td>%s</td>", author)
+		tbody += fmt.Sprintf("<td>%s</td>", HumanSize(size))
+
 		tbody += "</tr>"
 	}
 
@@ -88,10 +94,15 @@ func ViewImageHandler(w http.ResponseWriter, r *http.Request) {
 	</ol>
 	</div>
 	<div class="row">
-	<p>总大小:` + fmt.Sprintf("%d", totalSize) + `</p>
+	<p>总大小:` + HumanSize(totalSize) + `</p>
 	<table class="table table-bordered table-hover">
 	<thead>
-	<tr><th>ID</th><th>大小</th><th>作者</th><th>创建时间</th><th>命令</th></tr>
+	<tr>
+		<th>创建时间</th>
+		<th>命令</th>
+		<th>作者</th>
+		<th>大小</th>
+		</tr>
 	</thead>
 	<tbody>` + tbody + `</tbody></table></div>`
 

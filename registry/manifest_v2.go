@@ -2,7 +2,6 @@ package registry
 
 import (
 	"net/http"
-	"time"
 )
 
 //镜像Manifest(V 2, Schema 2)
