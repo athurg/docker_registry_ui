@@ -88,23 +88,54 @@ func ViewImageHandler(w http.ResponseWriter, r *http.Request) {
 	html += `
 	<div class="row">
 	<ol class="breadcrumb">
-	<li><a href="/view"><span><span class="glyphicon glyphicon-calendar">仓库</a></li>
+	<li><a href="/view">仓库</a></li>
 	<li><a href="/view/repo?name=` + repo + `">` + repo + `</a></li>
 	<li><a href="#">` + ref + `</a></li>
 	</ol>
 	</div>
 	<div class="row">
-	<p>总大小:` + HumanSize(totalSize) + `</p>
-	<table class="table table-bordered table-hover">
-	<thead>
-	<tr>
-		<th>创建时间</th>
-		<th>命令</th>
-		<th>作者</th>
-		<th>大小</th>
-		</tr>
-	</thead>
-	<tbody>` + tbody + `</tbody></table></div>`
+	<p class="lead">总大小:<mark>` + HumanSize(totalSize) + `</mark></p>
+	</div>`
+
+	if len(config.Config.Labels)>0 {
+		html += `
+		<div class="row">
+			<div class="panel panel-primary">
+				<div class="panel-heading">标签</div>
+				<div class="panel-body">
+					<dl class="dl-horizontal">`
+		for label,value := range config.Config.Labels {
+			html += `<dt>` + label + `</dt>`
+			html += `<dd>` + value + `</dd>`
+		}
+		html += `
+					</dl>
+				</div>
+			</div><!--panel-->
+		</div><!--row-->`
+	}
+
+	html += `
+	<div class="row">
+		<div class="panel panel-primary">
+			<div class="panel-heading">历史</div>
+			<div class="panel-body">
+				<small>
+				<table class="table table-bordered table-hover table-condensed">
+					<thead>
+						<tr>
+							<th>创建时间</th>
+							<th>命令</th>
+							<th>作者</th>
+							<th>大小</th>
+						</tr>
+					</thead>
+					<tbody>` + tbody + `</tbody>
+				</table>
+				</small>
+			</div>
+		</div><!--panel-->
+	</div><!--row-->`
 
 	html += htmlFoot
 	w.Write([]byte(html))

@@ -80,7 +80,7 @@ func ViewRepoHandler(w http.ResponseWriter, r *http.Request) {
 	html += `
 	<div class="row">
 	<ol class="breadcrumb">
-	<li><a href="/view"><span class="glyphicon glyphicon-calendar"></span>仓库</a></li>
+	<li><a href="/view">仓库</a></li>
 	<li><a href="#">` + repo + `</a></li>
 	</ol>
 	</div>

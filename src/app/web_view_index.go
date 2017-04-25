@@ -45,7 +45,7 @@ func ViewIndexHandler(w http.ResponseWriter, r *http.Request) {
 		html += `
 		<div class="row">
 		<ol class="breadcrumb">
-		<li><a href="view"><span><span class="glyphicon glyphicon-calendar"></span>仓库</span></a></li>
+		<li><a href="view">仓库</a></li>
 		</ol>
 		</div>
 		<div class="row">

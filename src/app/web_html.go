@@ -12,7 +12,15 @@ var htmlHead = `
 	</head>
 	<body>
 		<div class="container">
-`
+			<div class="row">
+				<nav class="navbar navbar-default">
+					<div class="container-fluid">
+						<div class="navbar-header">
+							<a class="navbar-brand" href="/view"><span class="glyphicon glyphicon-calendar">DockerRegistry</span></a>
+						</div>
+					</div>
+				</nav>
+			</div>`
 
 var htmlFoot = `
 		</div>
