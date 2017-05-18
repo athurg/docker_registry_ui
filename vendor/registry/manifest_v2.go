@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"fmt"
 	"net/http"
 )
 
@@ -37,4 +38,32 @@ func (cli *Client) ImageManifestV2(repo, ref, token string) (ManifestV2, error) 
 	err := cli.GetRequest("/v2/"+repo+"/manifests/"+ref, token, header, &info)
 
 	return info, err
+}
+
+//删除指定的Image
+func (cli *Client) ManifestDelete(repo, ref, token string) error {
+	header := http.Header{}
+	header.Set("Accept", "application/vnd.docker.distribution.manifest.v2+json")
+
+	//获取被删除镜像的Digest
+	headResp, err := cli.requestWithToken("HEAD", "/v2/"+repo+"/manifests/"+ref, token, header)
+	if err != nil {
+		return err
+	}
+	defer headResp.Body.Close()
+
+	digest := headResp.Header.Get("Docker-Content-Digest")
+
+	//执行删除
+	resp, err := cli.requestWithToken("DELETE", "/v2/"+repo+"/manifests/"+digest, token, header)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusAccepted {
+		return nil
+	}
+
+	return fmt.Errorf("请求错误[%d]", resp.StatusCode)
 }
