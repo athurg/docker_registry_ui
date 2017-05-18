@@ -30,6 +30,7 @@ func LoadWebServer(addr string) {
 	http.HandleFunc("/view", ViewIndexHandler)
 	http.HandleFunc("/view/repo", ViewRepoHandler)
 	http.HandleFunc("/view/image", ViewImageHandler)
+	http.HandleFunc("/view/image/delete", DeleteImageHandler)
 
 	http.ListenAndServe(addr, nil)
 }

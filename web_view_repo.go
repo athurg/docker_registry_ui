@@ -87,7 +87,7 @@ func ViewRepoHandler(w http.ResponseWriter, r *http.Request) {
 	<div class="row">
 	<table class="table table-bordered table-hover">
 	<thead>
-	<tr><th>ID</th><th>标签</th><th>创建时间</th><th>层数</th><th>大小</th></tr>
+	<tr><th>ID</th><th>标签</th><th>创建时间</th><th>层数</th><th>大小</th><th>操作</th></tr>
 	</thead>
 	<tbody>
 	`
@@ -98,6 +98,7 @@ func ViewRepoHandler(w http.ResponseWriter, r *http.Request) {
 		html += "<td>" + info.Created.Format("2006-01-02 15:04:05") + "</td>"
 		html += fmt.Sprintf("<td>%d</td>", info.LayerCount)
 		html += fmt.Sprintf("<td>%s</td>", HumanSize(info.Size))
+		html += fmt.Sprintf("<td><a href='/view/image/delete?repo=%s&tag=%s'>删除</td>", info.Repo, info.Tag)
 		html += "</tr>"
 	}
 	html += `</tbody></table></div>`

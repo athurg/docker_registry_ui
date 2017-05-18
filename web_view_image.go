@@ -30,6 +30,30 @@ func getImageInfo(repo, ref string) (registry.ManifestV2, registry.ImageConfig, 
 	return manifest, config, nil
 }
 
+func DeleteImageHandler(w http.ResponseWriter, r *http.Request) {
+	tag := r.FormValue("tag")
+	repo := r.FormValue("repo")
+
+	returnUrl := "/view/repo?name=" + repo
+
+	resourceAction := ResourceActions{Type: "repository", Name: repo, Actions: []string{"*"}}
+	token, err := CreateToken("", CfgTokenService, []ResourceActions{resourceAction})
+	if err != nil {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		fmt.Fprintf(w, "<html><body><h3>请求Token失败%s</h3><div><a href='%s'>返回</a></div></body>", err, returnUrl)
+		return
+	}
+
+	err = registryClient.ManifestDelete(repo, tag, token)
+	if err != nil {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		fmt.Fprintf(w, "<html><body><h3>删除镜像失败%s</h3><div><a href='%s'>返回</a></div></body>", err.Error(), returnUrl)
+		return
+	}
+
+	http.Redirect(w, r, returnUrl, http.StatusMovedPermanently)
+}
+
 func ViewImageHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	html := htmlHead
