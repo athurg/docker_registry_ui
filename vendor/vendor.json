@@ -1,0 +1,32 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "sNAU9ojYVUhO6dVXey6T3JhRQpw=",
+			"path": "github.com/docker/libtrust",
+			"revision": ""
+		},
+		{
+			"checksumSHA1": "42vkdsxNaLyPu+FktCzZ/8zsNSE=",
+			"path": "github.com/go-sql-driver/mysql",
+			"revision": ""
+		},
+		{
+			"checksumSHA1": "vE43s37+4CJ2CDU6TlOUOYE0K9c=",
+			"path": "golang.org/x/crypto/bcrypt",
+			"revision": ""
+		},
+		{
+			"checksumSHA1": "JsJdKXhz87gWenMwBeejTOeNE7k=",
+			"path": "golang.org/x/crypto/blowfish",
+			"revision": ""
+		},
+		{
+			"checksumSHA1": "QZPYb3cECw/eVdJyhU2q452g/8M=",
+			"path": "registry",
+			"revision": ""
+		}
+	],
+	"rootPath": "app"
+}
