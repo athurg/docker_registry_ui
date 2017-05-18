@@ -35,6 +35,5 @@ func LoadWebServer(addr string) {
 }
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte("Hallo"))
+	http.Redirect(w, r, "/view", http.StatusMovedPermanently)
 }
