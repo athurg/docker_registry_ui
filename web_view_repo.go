@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 )
@@ -32,12 +33,14 @@ func getRepoTagList(repo string) ([]ImageBaseInfo, error) {
 	for _, tag := range info.Tags {
 		manifest, err := registryClient.ImageManifestV2(repo, tag, token)
 		if err != nil {
-			return nil, fmt.Errorf("获取仓库标签(%s:%s)详情错误: %s", repo, tag, err)
+			log.Printf("获取仓库标签(%s:%s)详情错误: %s", repo, tag, err)
+			continue
 		}
 
 		config, err := registryClient.ImageConfigByDigest(repo, manifest.Config.Digest, token)
 		if err != nil {
-			return nil, fmt.Errorf("获取仓库标签(%s:%s)详情错误: %s", repo, tag, err)
+			log.Printf("获取仓库标签(%s:%s)详情错误: %s", repo, tag, err)
+			continue
 		}
 
 		totalSize := 0
