@@ -1,0 +1,35 @@
+#DockerCompose范例
+#  1. 请先通过generate-cert.sh生成合适的公钥对，保存到cert.pem文件
+#     以及本文件中的CERT_PEM_BLOCK、KEY_PEM_BLOCK
+#  2. 更新REGISTRY_AUTH_TOKEN_REALM中外网可访问到的HTTPS地址
+#  3. 使用db.sql初始化好数据库，并更新DSN中的数据库信息
+#  4. 如果需要，更新Token相关的Issure和Service
+version: '2.1'
+services:
+  storage:
+    image: registry:2
+    restart: always
+    ports:
+      - "127.0.0.1:5000:5000"
+    volumes:
+      - ./cert.pem:/etc/registry.crt:ro #该文件内容可以使用generate-cert.sh脚本生成
+      - ./storage:/var/docker_registry
+    environment:
+      - "REGISTRY_HTTP_RELATIVEURLS=true" #通过ELB(HTTPS)->Nginx(HTTP)->registry(HTTP)三层转发的必须该设置
+      - "REGISTRY_AUTH_TOKEN_ISSUER=Issuer" #和frontend保持一致
+      - "REGISTRY_AUTH_TOKEN_SERVICE=DockerRegistry" #与frontend保持一致
+      - "REGISTRY_AUTH_TOKEN_ROOTCERTBUNDLE=/etc/registry.crt"
+      - "REGISTRY_AUTH_TOKEN_REALM=https://xxx.xxx.com/auth" # 外网访问的地址
+      - "REGISTRY_STORAGE_DELETE_ENABLED=true" #如果不允许删除，请不要添加此行
+      - "REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/var/docker_registry"
+  frontend:
+    image: athurg/registry_auth
+    restart: always
+    environment:
+      - "TOKEN_ISSUER=Issuer"
+      - "TOKEN_SERVICE_NAME=DockerRegistry"
+      - "REGISTRY_ADDR=http://storage:5000" #在本容器中能访问到storage的地址即可，不一定是外网可访问到的地址
+      - "DSN=user:pass@tcp(HostIP:Port)/dbname?charset=utf8&parseTime=True&loc=Local"
+      - "CERT_PEM_BLOCK=-----BEGIN CERTIFICATE-----\nContent\nFrom\nGenerate\nBy\ngenerate-cert.sh\n\n-----END CERTIFICATE-----\n"
+      - "KEY_PEM_BLOCK=-----BEGIN RSA PRIVATE KEY-----\nContent\nFrom\nGenerate\nBy\ngenerate-cert.sh\n\n-----END CERTIFICATE-----\n"
+
