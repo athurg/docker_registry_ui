@@ -3,7 +3,7 @@ version: 2.0
 build:
   lite_image:
     compile:
-      dockerfile_path: Dockerfile
+      dockerfile_path: Dockerfile.compile
       build_dir: /
       cache: false
 
@@ -11,6 +11,6 @@ build:
       - /go/bin/app
 
     package:
-        dockerfile_path: Dockerfile.sec
+        dockerfile_path: Dockerfile.package
         build_dir: /
         cache: false
