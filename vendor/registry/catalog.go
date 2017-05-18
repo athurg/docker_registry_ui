@@ -8,6 +8,6 @@ type CatalogResponseInfo struct {
 //获取仓库列表
 func (cli *Client) GetCatalog(token string) (error, CatalogResponseInfo) {
 	var info CatalogResponseInfo
-	err := cli.Request("/v2/_catalog", token, &info)
+	err := cli.GetRequest("/v2/_catalog", token, nil, &info)
 	return err, info
 }

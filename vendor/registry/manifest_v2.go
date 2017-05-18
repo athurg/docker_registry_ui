@@ -34,7 +34,7 @@ func (cli *Client) ImageManifestV2(repo, ref, token string) (ManifestV2, error) 
 
 	header := http.Header{}
 	header.Set("Accept", "application/vnd.docker.distribution.manifest.v2+json")
-	err := cli.RequestWithHeader("/v2/"+repo+"/manifests/"+ref, token, header, &info)
+	err := cli.GetRequest("/v2/"+repo+"/manifests/"+ref, token, header, &info)
 
 	return info, err
 }

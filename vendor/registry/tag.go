@@ -9,6 +9,6 @@ type TagsListResponse struct {
 //获取指定仓库的标签列表
 func (cli *Client) GetTags(repo, token string) (error, TagsListResponse) {
 	var info TagsListResponse
-	err := cli.Request("/v2/"+repo+"/tags/list", token, &info)
+	err := cli.GetRequest("/v2/"+repo+"/tags/list", token, nil, &info)
 	return err, info
 }

@@ -58,7 +58,7 @@ type ImageConfig struct {
 func (cli *Client) ImageConfigByDigest(repo, digest, token string) (ImageConfig, error) {
 	var info ImageConfig
 
-	err := cli.Request("/v2/"+repo+"/blobs/"+digest, token, &info)
+	err := cli.GetRequest("/v2/"+repo+"/blobs/"+digest, token, nil, &info)
 
 	return info, err
 }
