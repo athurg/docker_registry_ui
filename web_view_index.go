@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -21,11 +22,13 @@ func getRepoList() ([]string, []int, error) {
 		resourceAction := ResourceActions{Type: "repository", Name: repo, Actions: []string{"pull"}}
 		token, err := CreateToken("", CfgTokenService, []ResourceActions{resourceAction})
 		if err != nil {
-			return nil, nil, fmt.Errorf("创建Token错误: %s", err)
+			log.Printf("创建Token错误: %s", err)
+			continue
 		}
 		err, info := registryClient.GetTags(repo, token)
 		if err != nil {
-			return nil, nil, fmt.Errorf("获取仓库标签错误: %s", err)
+			log.Printf("获取仓库标签错误: %s", err)
+			continue
 		}
 
 		tagCounts[i] = len(info.Tags)
