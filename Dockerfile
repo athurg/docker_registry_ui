@@ -1,7 +1,9 @@
-# vim: ft=Dockerfile
-FROM scratch
-MAINTAINER Feng Jianbo <fengjianbo@nibirutech.com>
+FROM golang AS compile
+ADD . $GOPATH/src/app
+RUN go get app
+RUN CGO_ENABLED=0 go install -a app
 
+FROM scratch
 ENV DSN ""
 ENV LISTEN_ADDR ":80"
 ENV TOKEN_ISSUER "AuthServer"
@@ -12,5 +14,5 @@ ENV PRIVILEGE_TABLE_NAME "privileges"
 ENV TOKEN_EXPIRATION "900"
 ENV DSN "user:pass@tcp(host:port)/dbname?charset=utf8&parseTime=True&loc=Local"
 
-ADD go/bin/app /
+COPY --from=compile /go/bin/app /app
 CMD ["/app"]
