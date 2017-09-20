@@ -17,5 +17,5 @@ func init() {
 }
 
 func main() {
-	LoadWebServer(CfgListenAddr)
+	LoadWebServer(CfgListenAddr, CfgRegistryAddr)
 }

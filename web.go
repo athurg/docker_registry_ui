@@ -24,7 +24,18 @@ func HumanSize(size int) string {
 	}
 }
 
-func LoadWebServer(addr string) {
+func LoadWebServer(addr, registryAddr string) error {
+	registryURL, err := url.Parse(registryAddr)
+	if err != nil {
+		return fmt.Errorf("Docker Registry 地址解析失败: %s", err)
+	}
+
+	//对Registry对请求作代理
+	registryProxy := httputil.NewSingleHostReverseProxy(registryURL)
+	http.HandleFunc("/v2/", registryProxy.ServeHTTP)
+	http.HandleFunc("/v1/", registryProxy.ServeHTTP)
+
+	//其他请求自行处理
 	http.HandleFunc("/", IndexHandler)
 	http.HandleFunc("/auth", AuthHandler)
 	http.HandleFunc("/view", ViewIndexHandler)
