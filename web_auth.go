@@ -85,18 +85,20 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("[INFO]%s请求授权服务%s, %s", ar.Account, ar.Service, ar.Scopes)
-
-	if len(ar.Account) == 1 {
-		log.Printf("用户名长度必须大于1(非匿名用户)或等于0(匿名用户): %s", ar.Account)
-		http.Error(w, fmt.Sprintf("Invalid username %s, length must large than 1", ar.Account), http.StatusUnauthorized)
+	//禁止使用代表匿名用户的*作为用户名
+	if ar.Account == "*" {
+		log.Println("[INFO]拒绝非法用户*的请求")
+		http.Error(w, fmt.Sprintf("Invalid username "+ar.Account), http.StatusUnauthorized)
 		return
 	}
 
-	//用户鉴定
+	//匿名用户用*代替
 	if ar.Account == "" {
 		ar.Account = "*"
 	}
+
+	log.Printf("[INFO]用户%s在%s请求%s服务的%s授权", ar.Account, ar.RemoteIP, ar.Service, ar.Scopes)
+
 	u, err := GetUser(ar.Account, ar.Password)
 	if err != nil {
 		log.Printf("用户查找失败: %s", err)
