@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"os"
 	"sort"
 	"strings"
 	"time"
@@ -54,7 +55,9 @@ type TokenHeader struct {
 }
 
 func LoadCertAndKey() (err error) {
-	cert, err := tls.X509KeyPair(CfgCertPEMBlock, CfgKeyPEMBlock)
+	keyFile := os.Getenv("REGISTRY_AUTH_TOKEN_ROOTKEYBUNDLE")
+	certFile := os.Getenv("REGISTRY_AUTH_TOKEN_ROOTCERTBUNDLE")
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
 		return
 	}

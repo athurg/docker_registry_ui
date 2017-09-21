@@ -111,6 +111,7 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 	if len(ar.Scopes) > 0 {
 		authzResults, err = u.Authorize(ar.RemoteIP, ar.Scopes)
 		if err != nil {
+			log.Printf("[INFO]查找授权失败: %s", err)
 			http.Error(w, fmt.Sprintf("Authorization failed (%s)", err), http.StatusInternalServerError)
 			return
 		}
@@ -118,13 +119,16 @@ func AuthHandler(w http.ResponseWriter, r *http.Request) {
 		// Authentication-only request ("docker login"), pass through.
 	}
 
+	log.Printf("[INFO]授权有效")
+
 	token, err := CreateToken(ar.Account, ar.Service, authzResults)
 	if err != nil {
-		msg := fmt.Sprintf("Failed to generate token %s", err)
+		msg := fmt.Sprintf("生成Token失败: %s", err)
 		http.Error(w, msg, http.StatusInternalServerError)
-		log.Printf("%s: %s", ar, msg)
+		log.Printf("生成Token失败%s: %s", ar, msg)
 		return
 	}
+
 	result, _ := json.Marshal(&map[string]string{"token": token})
 
 	w.Header().Set("Content-Type", "application/json")

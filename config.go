@@ -1,43 +1,35 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"strconv"
-	"strings"
 )
 
 var (
-	CfgKeyPEMBlock  []byte
-	CfgCertPEMBlock []byte
+	//WEB服务监听地址（视HTTPS证书提供与否，有可能是HTTP或HTTPS服务）
+	CfgListenAddr string = ":80"
 
-	CfgRegistryAddr       string = "localhost:5000"
-	CfgTokenService       string = "service"
-	CfgListenAddr         string = ":8080"
-	CfgTokenIssuer        string = "Tap4Fun"
-	CfgTokenExpiration    int64  = 10000000
-	CfgUserTableName      string = "users"
-	CfgDSN                string = "user:password@tcp(host:port)/dbname?charset=utf8&parseTime=True&loc=Local"
-	CfgPrivilegeTableName string = "privileges"
+	CfgRegistryBackendAddr string = "http://localhost:5000"
+
+	CfgDSN string = "user:password@tcp(host:port)/dbname?charset=utf8&parseTime=True&loc=Local"
+
+	//签名的相关信息，应该和Registry后端中保持一致
+	CfgTokenIssuer     string = "Issurer"
+	CfgTokenService    string = "Registry Service"
+	CfgTokenExpiration int64  = 10000000
 )
 
-func init() {
-	if v := os.Getenv("KEY_PEM_BLOCK"); v != "" {
-		CfgKeyPEMBlock = []byte(strings.Replace(v, "\\n", "\n", -1))
-	}
-
-	if v := os.Getenv("CERT_PEM_BLOCK"); v != "" {
-		CfgCertPEMBlock = []byte(strings.Replace(v, "\\n", "\n", -1))
-	}
-
+func ParseConfig() error {
 	if v := os.Getenv("DSN"); v != "" {
 		CfgDSN = v
 	}
 
-	if v := os.Getenv("REGISTRY_ADDR"); v != "" {
-		CfgRegistryAddr = v
+	if v := os.Getenv("REGISTRY_BACKEND_ADDR"); v != "" {
+		CfgRegistryBackendAddr = v
 	}
 
-	if v := os.Getenv("TOKEN_SERVICE_NAME"); v != "" {
+	if v := os.Getenv("REGISTRY_AUTH_TOKEN_SERVICE"); v != "" {
 		CfgTokenService = v
 	}
 
@@ -45,22 +37,17 @@ func init() {
 		CfgListenAddr = v
 	}
 
-	if v := os.Getenv("TOKEN_ISSUER"); v != "" {
+	if v := os.Getenv("REGISTRY_AUTH_TOKEN_ISSUER"); v != "" {
 		CfgTokenIssuer = v
-	}
-
-	if v := os.Getenv("USER_TABLE_NAME"); v != "" {
-		CfgUserTableName = v
-	}
-
-	if v := os.Getenv("PRIVILEGE_TABLE_NAME"); v != "" {
-		CfgPrivilegeTableName = v
 	}
 
 	if v := os.Getenv("TOKEN_EXPIRATION"); v != "" {
 		n, err := strconv.Atoi(v)
-		if err == nil {
-			CfgTokenExpiration = int64(n)
+		if err != nil {
+			return fmt.Errorf("无效的TOKEN有效期: %s", v)
 		}
+		CfgTokenExpiration = int64(n)
 	}
+
+	return nil
 }
