@@ -63,50 +63,63 @@ func getRepoTagList(repo string) ([]ImageBaseInfo, error) {
 	return result, nil
 }
 
-func ViewRepoHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	html := htmlHead
-
+func ApiRepoShowHandler(w http.ResponseWriter, r *http.Request) {
 	repo := r.FormValue("name")
 	if repo == "" {
-		html += "<h3>未指定仓库名</h3>" + htmlFoot
-		w.Write([]byte(html))
+		renderError(w, fmt.Errorf("未指定仓库名"))
 		return
 	}
 
 	result, err := getRepoTagList(repo)
 	if err != nil {
-		html += "<h3>" + err.Error() + "</h3>"
-		w.Write([]byte(html))
+		renderError(w, err)
 		return
 	}
 
-	html += `
-	<div class="row">
-	<ol class="breadcrumb">
-	<li><a href="/view">仓库</a></li>
-	<li><a href="#">` + repo + `</a></li>
-	</ol>
-	</div>
-	<div class="row">
-	<table class="table table-bordered table-hover">
-	<thead>
-	<tr><th>ID</th><th>标签</th><th>创建时间</th><th>层数</th><th>大小</th><th>操作</th></tr>
-	</thead>
-	<tbody>
-	`
-	for _, info := range result {
-		html += "<tr>"
-		html += "<td>" + info.Id[:12] + "</td>"
-		html += "<td><a href='/view/image?name=" + info.Name + "'>" + info.Tag + "</a></td>"
-		html += "<td>" + info.Created.Format("2006-01-02 15:04:05") + "</td>"
-		html += fmt.Sprintf("<td>%d</td>", info.LayerCount)
-		html += fmt.Sprintf("<td>%s</td>", HumanSize(info.Size))
-		html += fmt.Sprintf("<td><a href='/view/image/delete?repo=%s&tag=%s'>删除</td>", info.Repo, info.Tag)
-		html += "</tr>"
-	}
-	html += `</tbody></table></div>`
+	renderInfo(w, result)
+}
 
-	html += htmlFoot
-	w.Write([]byte(html))
+func getRepoList() ([]string, []int, error) {
+	tokenServiceName, _ := GetConfigAsString("registry_token_service_name")
+	resourceAction := ResourceActions{Type: "registry", Name: "catalog", Actions: []string{"*"}}
+	token, err := CreateToken("", tokenServiceName, []ResourceActions{resourceAction})
+	if err != nil {
+		return nil, nil, fmt.Errorf("创建Token错误: %s", err)
+	}
+
+	err, catalogInfo := registryClient.GetCatalog(token)
+	if err != nil {
+		return nil, nil, fmt.Errorf("获取仓库列表错误: %s", err)
+	}
+
+	tagCounts := make([]int, len(catalogInfo.Repositories))
+	for i, repo := range catalogInfo.Repositories {
+		tokenServiceName, _ := GetConfigAsString("registry_token_service_name")
+		resourceAction := ResourceActions{Type: "repository", Name: repo, Actions: []string{"pull"}}
+		token, err := CreateToken("", tokenServiceName, []ResourceActions{resourceAction})
+		if err != nil {
+			log.Printf("创建Token错误: %s", err)
+			continue
+		}
+		err, info := registryClient.GetTags(repo, token)
+		if err != nil {
+			log.Printf("获取仓库标签错误: %s", err)
+			continue
+		}
+
+		tagCounts[i] = len(info.Tags)
+	}
+
+	return catalogInfo.Repositories, tagCounts, nil
+}
+
+func ApiRepoIndexHandler(w http.ResponseWriter, r *http.Request) {
+	repos, tagCount, _ := getRepoList()
+
+	info := map[string]interface{}{
+		"TagCount": tagCount,
+		"Repos":    repos,
+	}
+
+	renderInfo(w, info)
 }

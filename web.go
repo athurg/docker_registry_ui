@@ -47,11 +47,10 @@ func LoadWebServer(addr, registryBackendAddr string) error {
 	//其他请求自行处理
 	http.HandleFunc("/", IndexHandler)
 	http.HandleFunc("/auth", AuthHandler)
-	http.HandleFunc("/view", ViewIndexHandler)
-	http.HandleFunc("/view.json", ViewIndexJSONHandler)
-	http.HandleFunc("/view/repo", ViewRepoHandler)
-	http.HandleFunc("/view/image", ViewImageHandler)
-	http.HandleFunc("/view/image/delete", DeleteImageHandler)
+	http.HandleFunc("/view.json", ApiRepoIndexHandler)
+	http.HandleFunc("/view/repo.json", ApiRepoShowHandler)
+	http.HandleFunc("/view/image.json", ApiImageShowHandler)
+	http.HandleFunc("/view/image/delete.json", ApiImageDeleteHandler)
 
 	//如果提供了HTTPS的密钥对，则监听为HTTPS，否则监听为HTTP
 	registryHttpsKeyBlock, _ := GetConfigAsString("registry_https_key")
@@ -67,6 +66,39 @@ func LoadWebServer(addr, registryBackendAddr string) error {
 }
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("请求来了", r.URL)
+	fmt.Println("未知请求", r.URL, "重定向到/view")
 	http.Redirect(w, r, "/view", http.StatusMovedPermanently)
+}
+
+func renderInfo(w http.ResponseWriter, info interface{}) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	data := map[string]interface{}{
+		"success": true,
+		"info":    info,
+	}
+
+	err := json.NewEncoder(w).Encode(data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func renderSuccess(w http.ResponseWriter) {
+	renderInfo(w, nil)
+}
+
+func renderError(w http.ResponseWriter, err error) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	data := map[string]interface{}{
+		"success": false,
+		"error":   err.Error(),
+	}
+	renderErr := json.NewEncoder(w).Encode(data)
+	if renderErr != nil {
+		http.Error(w, renderErr.Error(), http.StatusInternalServerError)
+	}
 }
