@@ -1,11 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"os"
 )
 
 const (
@@ -27,6 +28,11 @@ func HumanSize(size int) string {
 	}
 }
 
+const (
+	registryHttpsKeyFile  = "/etc/registry_https.key"
+	registryHttpsCertFile = "/etc/registry_https.crt"
+)
+
 func LoadWebServer(addr, registryBackendAddr string) error {
 	registryBackendURL, err := url.Parse(registryBackendAddr)
 	if err != nil {
@@ -42,18 +48,22 @@ func LoadWebServer(addr, registryBackendAddr string) error {
 	http.HandleFunc("/", IndexHandler)
 	http.HandleFunc("/auth", AuthHandler)
 	http.HandleFunc("/view", ViewIndexHandler)
+	http.HandleFunc("/view.json", ViewIndexJSONHandler)
 	http.HandleFunc("/view/repo", ViewRepoHandler)
 	http.HandleFunc("/view/image", ViewImageHandler)
 	http.HandleFunc("/view/image/delete", DeleteImageHandler)
 
-	httpsCertFile := os.Getenv("REGISTRY_UI_HTTPS_CERT")
-	httpsKeyFile := os.Getenv("REGISTRY_UI_HTTPS_KEY")
-
-	if httpsKeyFile == "" || httpsCertFile == "" {
+	//如果提供了HTTPS的密钥对，则监听为HTTPS，否则监听为HTTP
+	registryHttpsKeyBlock, _ := GetConfigAsString("registry_https_key")
+	registryHttpsCertBlock, _ := GetConfigAsString("registry_https_cert")
+	if registryHttpsKeyBlock == "" || registryHttpsCertBlock == "" {
 		return http.ListenAndServe(addr, nil)
-	} else {
-		return http.ListenAndServeTLS(addr, httpsCertFile, httpsKeyFile, nil)
 	}
+
+	ioutil.WriteFile(registryHttpsKeyFile, []byte(registryHttpsKeyBlock), 0755)
+	ioutil.WriteFile(registryHttpsCertFile, []byte(registryHttpsCertBlock), 0755)
+
+	return http.ListenAndServeTLS(addr, registryHttpsCertFile, registryHttpsKeyFile, nil)
 }
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {

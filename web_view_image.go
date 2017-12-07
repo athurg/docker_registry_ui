@@ -12,7 +12,8 @@ import (
 //镜像commit、命令
 func getImageInfo(repo, ref string) (registry.ManifestV2, registry.ImageConfig, error) {
 	resourceAction := ResourceActions{Type: "repository", Name: repo, Actions: []string{"pull"}}
-	token, err := CreateToken("", CfgTokenService, []ResourceActions{resourceAction})
+	tokenServiceName, _ := GetConfigAsString("registry_token_service_name")
+	token, err := CreateToken("", tokenServiceName, []ResourceActions{resourceAction})
 	if err != nil {
 		return registry.ManifestV2{}, registry.ImageConfig{}, fmt.Errorf("创建Token错误: %s", err)
 	}
@@ -36,8 +37,9 @@ func DeleteImageHandler(w http.ResponseWriter, r *http.Request) {
 
 	returnUrl := "/view/repo?name=" + repo
 
+	tokenServiceName, _ := GetConfigAsString("registry_token_service_name")
 	resourceAction := ResourceActions{Type: "repository", Name: repo, Actions: []string{"*"}}
-	token, err := CreateToken("", CfgTokenService, []ResourceActions{resourceAction})
+	token, err := CreateToken("", tokenServiceName, []ResourceActions{resourceAction})
 	if err != nil {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		fmt.Fprintf(w, "<html><body><h3>请求Token失败%s</h3><div><a href='%s'>返回</a></div></body>", err, returnUrl)

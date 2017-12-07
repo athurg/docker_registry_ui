@@ -18,8 +18,9 @@ type ImageBaseInfo struct {
 }
 
 func getRepoTagList(repo string) ([]ImageBaseInfo, error) {
+	tokenServiceName, _ := GetConfigAsString("registry_token_service_name")
 	resourceAction := ResourceActions{Type: "repository", Name: repo, Actions: []string{"pull"}}
-	token, err := CreateToken("", CfgTokenService, []ResourceActions{resourceAction})
+	token, err := CreateToken("", tokenServiceName, []ResourceActions{resourceAction})
 	if err != nil {
 		return nil, fmt.Errorf("创建Token错误: %s", err)
 	}

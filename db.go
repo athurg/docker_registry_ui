@@ -1,7 +1,8 @@
 package main
 
 import (
-	"fmt"
+	"log"
+	"os"
 
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
@@ -9,13 +10,17 @@ import (
 
 var dbConn *sql.DB
 
-func connectDb() error {
-	if dbConn == nil || dbConn.Ping() != nil {
-		db, err := sql.Open("mysql", CfgDSN)
-		if err != nil {
-			return fmt.Errorf("DB connect failed: %s", err)
-		}
-		dbConn = db
+func init() {
+	dsn := os.Getenv("DSN")
+	if dsn == "" {
+		dsn = "root:root@tcp(localhost:3306)/dohub?charset=utf8&parseTime=True&loc=Local"
 	}
-	return nil
+
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		log.Fatal("DB connect failed: %s", err)
+		return
+	}
+
+	dbConn = db
 }

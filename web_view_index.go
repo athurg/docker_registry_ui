@@ -7,11 +7,13 @@ import (
 )
 
 func getRepoList() ([]string, []int, error) {
+	tokenServiceName, _ := GetConfigAsString("registry_token_service_name")
 	resourceAction := ResourceActions{Type: "registry", Name: "catalog", Actions: []string{"*"}}
-	token, err := CreateToken("", CfgTokenService, []ResourceActions{resourceAction})
+	token, err := CreateToken("", tokenServiceName, []ResourceActions{resourceAction})
 	if err != nil {
 		return nil, nil, fmt.Errorf("创建Token错误: %s", err)
 	}
+
 	err, catalogInfo := registryClient.GetCatalog(token)
 	if err != nil {
 		return nil, nil, fmt.Errorf("获取仓库列表错误: %s", err)
@@ -19,8 +21,9 @@ func getRepoList() ([]string, []int, error) {
 
 	tagCounts := make([]int, len(catalogInfo.Repositories))
 	for i, repo := range catalogInfo.Repositories {
+		tokenServiceName, _ := GetConfigAsString("registry_token_service_name")
 		resourceAction := ResourceActions{Type: "repository", Name: repo, Actions: []string{"pull"}}
-		token, err := CreateToken("", CfgTokenService, []ResourceActions{resourceAction})
+		token, err := CreateToken("", tokenServiceName, []ResourceActions{resourceAction})
 		if err != nil {
 			log.Printf("创建Token错误: %s", err)
 			continue

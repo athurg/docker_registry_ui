@@ -57,10 +57,6 @@ func (u *User) Authorize(ip net.IP, scopes []AuthScope) ([]ResourceActions, erro
 func GetUser(username, password string) (User, error) {
 	u := User{}
 
-	if err := connectDb(); err != nil {
-		return u, err
-	}
-
 	row := dbConn.QueryRow("SELECT `id`,`username`,`password` FROM `users` WHERE `username`=?", username)
 	err := row.Scan(&u.ID, &u.Username, &u.Password)
 	if err == sql.ErrNoRows {
@@ -83,10 +79,6 @@ func GetUser(username, password string) (User, error) {
 }
 
 func (u *User) LoadPrivileges() error {
-	if err := connectDb(); err != nil {
-		return err
-	}
-
 	rows, err := dbConn.Query("SELECT `host`,`action`,`repo`,`category` FROM `privileges` WHERE `user_id`=?", u.ID)
 	if err != nil {
 		return err

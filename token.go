@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
-	"os"
 	"sort"
 	"strings"
 	"time"
@@ -54,26 +53,27 @@ type TokenHeader struct {
 	RawJWK     *json.RawMessage `json:"jwk,omitempty"`
 }
 
-func LoadCertAndKey() (err error) {
-	keyFile := os.Getenv("REGISTRY_AUTH_TOKEN_ROOTKEYBUNDLE")
-	certFile := os.Getenv("REGISTRY_AUTH_TOKEN_ROOTCERTBUNDLE")
-	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+func preLoadCertAndKey() error {
+	//从数据库配置表中获取Registry认证密钥对
+	keyBlock, _ := GetConfigAsString("registry_auth_token_key")
+	crtBlock, _ := GetConfigAsString("registry_auth_token_cert")
+	cert, err := tls.X509KeyPair([]byte(crtBlock), []byte(keyBlock))
 	if err != nil {
-		return
+		return err
 	}
 
 	x509Cert, err := x509.ParseCertificate(cert.Certificate[0])
 	if err != nil {
-		return
+		return err
 	}
 
 	publicKey, err = libtrust.FromCryptoPublicKey(x509Cert.PublicKey)
 	if err != nil {
-		return
+		return err
 	}
 	privateKey, err = libtrust.FromCryptoPrivateKey(cert.PrivateKey)
 
-	return
+	return err
 }
 
 func CreateToken(account, service string, authzResults []ResourceActions) (string, error) {
@@ -98,14 +98,17 @@ func CreateToken(account, service string, authzResults []ResourceActions) (strin
 	}
 	hdrPayload := strings.TrimRight(base64.URLEncoding.EncodeToString(headerJSON), "=")
 
+	tokenIssuer, _ := GetConfigAsString("registry_token_issuer")
+	tokenExpiration, _ := GetConfigAsInt64("registry_token_expiration")
+
 	//生成claims
 	claims := TokenClaimSet{
-		Issuer:     CfgTokenIssuer,
+		Issuer:     tokenIssuer,
 		Subject:    account,
 		Audience:   service,
-		NotBefore:  now - 10,
+		NotBefore:  now - tokenExpiration,
 		IssuedAt:   now,
-		Expiration: now + CfgTokenExpiration,
+		Expiration: now + tokenExpiration,
 		JWTID:      fmt.Sprintf("%d", rand.Int63()),
 		Access:     []*ResourceActions{},
 	}
