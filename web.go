@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -45,22 +46,24 @@ func LoadWebServer(addr, registryBackendAddr string) error {
 	http.HandleFunc("/v1/", registryProxy.ServeHTTP)
 
 	//其他请求自行处理
-	http.HandleFunc("/", IndexHandler)
 	http.HandleFunc("/auth", AuthHandler)
-	http.HandleFunc("/view.json", ApiRepoIndexHandler)
-	http.HandleFunc("/view/repo.json", ApiRepoShowHandler)
-	http.HandleFunc("/view/image.json", ApiImageShowHandler)
-	http.HandleFunc("/view/image/delete.json", ApiImageDeleteHandler)
+	http.HandleFunc("/api/repo/index.json", ApiRepoIndexHandler)
+	http.HandleFunc("/api/repo/show.json", ApiRepoShowHandler)
+	http.HandleFunc("/api/image/show.json", ApiImageShowHandler)
+	http.HandleFunc("/api/image/delete.json", ApiImageDeleteHandler)
 
 	//如果提供了HTTPS的密钥对，则监听为HTTPS，否则监听为HTTP
 	registryHttpsKeyBlock, _ := GetConfigAsString("registry_https_key")
 	registryHttpsCertBlock, _ := GetConfigAsString("registry_https_cert")
 	if registryHttpsKeyBlock == "" || registryHttpsCertBlock == "" {
+		log.Println("在", addr, "启动HTTP服务")
 		return http.ListenAndServe(addr, nil)
 	}
 
 	ioutil.WriteFile(registryHttpsKeyFile, []byte(registryHttpsKeyBlock), 0755)
 	ioutil.WriteFile(registryHttpsCertFile, []byte(registryHttpsCertBlock), 0755)
+
+	log.Println("在", addr, "启动HTTPS服务")
 
 	return http.ListenAndServeTLS(addr, registryHttpsCertFile, registryHttpsKeyFile, nil)
 }

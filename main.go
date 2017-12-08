@@ -21,7 +21,7 @@ func main() {
 
 	//创建Registry后端代理及WEB服务
 	listenAddr := os.Getenv("LISTEN_ADDR")
-	if listenAddr != "" {
+	if listenAddr == "" {
 		listenAddr = ":80"
 	}
 
