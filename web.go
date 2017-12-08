@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 )
 
 const (
@@ -34,7 +35,7 @@ const (
 	registryHttpsCertFile = "/etc/registry_https.crt"
 )
 
-func LoadWebServer(addr, registryBackendAddr string) error {
+func LoadWebServer(registryBackendAddr string) error {
 	registryBackendURL, err := url.Parse(registryBackendAddr)
 	if err != nil {
 		return fmt.Errorf("Docker Registry 地址解析失败: %s", err)
@@ -56,20 +57,31 @@ func LoadWebServer(addr, registryBackendAddr string) error {
 		http.HandleFunc("/api/image/delete.json", ApiImageDeleteHandler)
 	}
 
-	//如果提供了HTTPS的密钥对，则监听为HTTPS，否则监听为HTTP
+	//如果提供了HTTPS的密钥对，则需要监听HTTPS
 	registryHttpsKeyBlock, _ := GetStringConfig("registry_https_key")
 	registryHttpsCertBlock, _ := GetStringConfig("registry_https_cert")
-	if registryHttpsKeyBlock == "" || registryHttpsCertBlock == "" {
-		log.Println("在", addr, "启动HTTP服务")
-		return http.ListenAndServe(addr, nil)
+	if registryHttpsKeyBlock != "" || registryHttpsCertBlock != "" {
+		httpsListenAddr := os.Getenv("HTTPS_LISTEN_ADDR")
+		if httpsListenAddr == "" {
+			httpsListenAddr = ":443"
+		}
+
+		ioutil.WriteFile(registryHttpsKeyFile, []byte(registryHttpsKeyBlock), 0755)
+		ioutil.WriteFile(registryHttpsCertFile, []byte(registryHttpsCertBlock), 0755)
+
+		log.Println("在", httpsListenAddr, "启动HTTPS服务")
+
+		go http.ListenAndServeTLS(httpsListenAddr, registryHttpsCertFile, registryHttpsKeyFile, nil)
 	}
 
-	ioutil.WriteFile(registryHttpsKeyFile, []byte(registryHttpsKeyBlock), 0755)
-	ioutil.WriteFile(registryHttpsCertFile, []byte(registryHttpsCertBlock), 0755)
+	//默认监听HTTP
+	httpListenAddr := os.Getenv("HTTP_LISTEN_ADDR")
+	if httpListenAddr == "" {
+		httpListenAddr = ":80"
+	}
 
-	log.Println("在", addr, "启动HTTPS服务")
-
-	return http.ListenAndServeTLS(addr, registryHttpsCertFile, registryHttpsKeyFile, nil)
+	log.Println("在", httpListenAddr, "启动HTTP服务")
+	return http.ListenAndServe(httpListenAddr, nil)
 }
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {

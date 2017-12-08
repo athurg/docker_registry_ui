@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"sort"
 	"strings"
@@ -79,6 +80,13 @@ func loadRegistryKeyPair() (libtrust.PublicKey, libtrust.PrivateKey, error) {
 	if err != nil {
 		return nil, nil, err
 	}
+
+	//刷新到文件系统，供Registry后端使用
+	keyPath, err := GetStringConfig("registry_auth_token_key_path")
+	ioutil.WriteFile(keyPath, []byte(crtBlock), 0755)
+
+	crtPath, err := GetStringConfig("registry_auth_token_cert_path")
+	ioutil.WriteFile(crtPath, []byte(keyBlock), 0755)
 
 	return publicKey, privateKey, nil
 }
