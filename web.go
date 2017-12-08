@@ -1,11 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"os"
 )
 
 const (
@@ -27,6 +29,11 @@ func HumanSize(size int) string {
 	}
 }
 
+const (
+	registryHttpsKeyFile  = "/etc/registry_https.key"
+	registryHttpsCertFile = "/etc/registry_https.crt"
+)
+
 func LoadWebServer(addr, registryBackendAddr string) error {
 	registryBackendURL, err := url.Parse(registryBackendAddr)
 	if err != nil {
@@ -39,24 +46,62 @@ func LoadWebServer(addr, registryBackendAddr string) error {
 	http.HandleFunc("/v1/", registryProxy.ServeHTTP)
 
 	//其他请求自行处理
-	http.HandleFunc("/", IndexHandler)
 	http.HandleFunc("/auth", AuthHandler)
-	http.HandleFunc("/view", ViewIndexHandler)
-	http.HandleFunc("/view/repo", ViewRepoHandler)
-	http.HandleFunc("/view/image", ViewImageHandler)
-	http.HandleFunc("/view/image/delete", DeleteImageHandler)
+	http.HandleFunc("/api/repo/index.json", ApiRepoIndexHandler)
+	http.HandleFunc("/api/repo/show.json", ApiRepoShowHandler)
+	http.HandleFunc("/api/image/show.json", ApiImageShowHandler)
+	http.HandleFunc("/api/image/delete.json", ApiImageDeleteHandler)
 
-	httpsCertFile := os.Getenv("REGISTRY_UI_HTTPS_CERT")
-	httpsKeyFile := os.Getenv("REGISTRY_UI_HTTPS_KEY")
-
-	if httpsKeyFile == "" || httpsCertFile == "" {
+	//如果提供了HTTPS的密钥对，则监听为HTTPS，否则监听为HTTP
+	registryHttpsKeyBlock, _ := GetStringConfig("registry_https_key")
+	registryHttpsCertBlock, _ := GetStringConfig("registry_https_cert")
+	if registryHttpsKeyBlock == "" || registryHttpsCertBlock == "" {
+		log.Println("在", addr, "启动HTTP服务")
 		return http.ListenAndServe(addr, nil)
-	} else {
-		return http.ListenAndServeTLS(addr, httpsCertFile, httpsKeyFile, nil)
 	}
+
+	ioutil.WriteFile(registryHttpsKeyFile, []byte(registryHttpsKeyBlock), 0755)
+	ioutil.WriteFile(registryHttpsCertFile, []byte(registryHttpsCertBlock), 0755)
+
+	log.Println("在", addr, "启动HTTPS服务")
+
+	return http.ListenAndServeTLS(addr, registryHttpsCertFile, registryHttpsKeyFile, nil)
 }
 
 func IndexHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("请求来了", r.URL)
+	fmt.Println("未知请求", r.URL, "重定向到/view")
 	http.Redirect(w, r, "/view", http.StatusMovedPermanently)
+}
+
+func renderInfo(w http.ResponseWriter, info interface{}) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	data := map[string]interface{}{
+		"success": true,
+		"info":    info,
+	}
+
+	err := json.NewEncoder(w).Encode(data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func renderSuccess(w http.ResponseWriter) {
+	renderInfo(w, nil)
+}
+
+func renderError(w http.ResponseWriter, err error) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	data := map[string]interface{}{
+		"success": false,
+		"error":   err.Error(),
+	}
+	renderErr := json.NewEncoder(w).Encode(data)
+	if renderErr != nil {
+		http.Error(w, renderErr.Error(), http.StatusInternalServerError)
+	}
 }

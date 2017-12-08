@@ -1,7 +1,8 @@
 package main
 
 import (
-	"fmt"
+	"log"
+	"os"
 
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
@@ -9,13 +10,36 @@ import (
 
 var dbConn *sql.DB
 
-func connectDb() error {
-	if dbConn == nil || dbConn.Ping() != nil {
-		db, err := sql.Open("mysql", CfgDSN)
-		if err != nil {
-			return fmt.Errorf("DB connect failed: %s", err)
-		}
-		dbConn = db
+func init() {
+	dsn := os.Getenv("DSN")
+	if dsn == "" {
+		dsn = "root:root@tcp(localhost:3306)/dohub?charset=utf8&parseTime=True&loc=Local"
 	}
-	return nil
+
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		log.Fatalf("Invalid DSN %s: %s", dsn, err)
+		return
+	}
+
+	err = db.Ping()
+	if err != nil {
+		log.Fatalf("Fail to connect database: %s", err)
+		return
+	}
+
+	//初始化数据
+	if err := InitUserTable(db); err != nil {
+		log.Fatalf("Fail to init users table", err)
+	}
+
+	if err := InitPrivilegeTable(db); err != nil {
+		log.Fatalf("Fail to init users table", err)
+	}
+
+	if err := InitConfigTable(db); err != nil {
+		log.Fatalf("Fail to init users table", err)
+	}
+
+	dbConn = db
 }

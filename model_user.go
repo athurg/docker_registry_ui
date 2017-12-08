@@ -10,6 +10,27 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+func InitUserTable(db *sql.DB) error {
+	createSql := "CREATE TABLE IF NOT EXISTS `users` ("
+	createSql += "  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,"
+	createSql += "  `username` varchar(255) CHARACTER SET utf8 NOT NULL DEFAULT '',"
+	createSql += "  `password` varchar(255) CHARACTER SET utf8 NOT NULL DEFAULT '',"
+	createSql += "  PRIMARY KEY (`id`),"
+	createSql += "  UNIQUE KEY `username` (`username`)"
+	createSql += ") ENGINE=InnoDB DEFAULT CHARSET=utf8"
+	if _, err := db.Exec(createSql); err != nil {
+		return err
+	}
+
+	initSql := "INSERT IGNORE INTO `users` (`id`, `username`, `password`)"
+	initSql += " VALUES (1, '*', 'anonymous_need_no_password')"
+	if _, err := db.Exec(initSql); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 type User struct {
 	ID         int64
 	Username   string //用户名，*代表匿名用户
@@ -57,10 +78,6 @@ func (u *User) Authorize(ip net.IP, scopes []AuthScope) ([]ResourceActions, erro
 func GetUser(username, password string) (User, error) {
 	u := User{}
 
-	if err := connectDb(); err != nil {
-		return u, err
-	}
-
 	row := dbConn.QueryRow("SELECT `id`,`username`,`password` FROM `users` WHERE `username`=?", username)
 	err := row.Scan(&u.ID, &u.Username, &u.Password)
 	if err == sql.ErrNoRows {
@@ -83,10 +100,6 @@ func GetUser(username, password string) (User, error) {
 }
 
 func (u *User) LoadPrivileges() error {
-	if err := connectDb(); err != nil {
-		return err
-	}
-
 	rows, err := dbConn.Query("SELECT `host`,`action`,`repo`,`category` FROM `privileges` WHERE `user_id`=?", u.ID)
 	if err != nil {
 		return err

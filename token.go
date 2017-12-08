@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
-	"os"
 	"sort"
 	"strings"
 	"time"
@@ -17,11 +16,6 @@ import (
 
 //Copy from github.com/docker/distribution/registry/auth/token/token.go#ResourceActions
 const TokenSeparator = "."
-
-var (
-	publicKey  libtrust.PublicKey
-	privateKey libtrust.PrivateKey
-)
 
 //Refer github.com/docker/distribution/registry/auth/token/token.go#ResourceActions
 type ResourceActions struct {
@@ -54,29 +48,47 @@ type TokenHeader struct {
 	RawJWK     *json.RawMessage `json:"jwk,omitempty"`
 }
 
-func LoadCertAndKey() (err error) {
-	keyFile := os.Getenv("REGISTRY_AUTH_TOKEN_ROOTKEYBUNDLE")
-	certFile := os.Getenv("REGISTRY_AUTH_TOKEN_ROOTCERTBUNDLE")
-	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+func loadRegistryKeyPair() (libtrust.PublicKey, libtrust.PrivateKey, error) {
+	//从数据库配置表中获取Registry认证密钥对
+	keyBlock, err := GetStringConfig("registry_auth_token_key")
 	if err != nil {
-		return
+		return nil, nil, fmt.Errorf("获取Key失败: %s", err)
+	}
+
+	crtBlock, _ := GetStringConfig("registry_auth_token_cert")
+	if err != nil {
+		return nil, nil, fmt.Errorf("获取Cert失败: %s", err)
+	}
+
+	cert, err := tls.X509KeyPair([]byte(crtBlock), []byte(keyBlock))
+	if err != nil {
+		return nil, nil, err
 	}
 
 	x509Cert, err := x509.ParseCertificate(cert.Certificate[0])
 	if err != nil {
-		return
+		return nil, nil, err
 	}
 
-	publicKey, err = libtrust.FromCryptoPublicKey(x509Cert.PublicKey)
+	publicKey, err := libtrust.FromCryptoPublicKey(x509Cert.PublicKey)
 	if err != nil {
-		return
+		return nil, nil, err
 	}
-	privateKey, err = libtrust.FromCryptoPrivateKey(cert.PrivateKey)
 
-	return
+	privateKey, err := libtrust.FromCryptoPrivateKey(cert.PrivateKey)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return publicKey, privateKey, nil
 }
 
 func CreateToken(account, service string, authzResults []ResourceActions) (string, error) {
+	publicKey, privateKey, err := loadRegistryKeyPair()
+	if err != nil {
+		return "", fmt.Errorf("Failed to load keypaire: %s", err)
+	}
+
 	now := time.Now().Unix()
 
 	// Sign something dummy to find out which algorithm is used.
@@ -98,14 +110,17 @@ func CreateToken(account, service string, authzResults []ResourceActions) (strin
 	}
 	hdrPayload := strings.TrimRight(base64.URLEncoding.EncodeToString(headerJSON), "=")
 
+	tokenIssuer, _ := GetStringConfig("registry_token_issuer")
+	tokenExpiration, _ := GetInt64Config("registry_token_expiration")
+
 	//生成claims
 	claims := TokenClaimSet{
-		Issuer:     CfgTokenIssuer,
+		Issuer:     tokenIssuer,
 		Subject:    account,
 		Audience:   service,
-		NotBefore:  now - 10,
+		NotBefore:  now - tokenExpiration,
 		IssuedAt:   now,
-		Expiration: now + CfgTokenExpiration,
+		Expiration: now + tokenExpiration,
 		JWTID:      fmt.Sprintf("%d", rand.Int63()),
 		Access:     []*ResourceActions{},
 	}
