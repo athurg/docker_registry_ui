@@ -10,6 +10,14 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+const createUserSql = "" +
+	"CREATE TABLE IF NOT EXISTS `users` (" +
+	"  `id` int(11) unsigned NOT NULL AUTO_INCREMENT," +
+	"  `username` varchar(255) CHARACTER SET utf8 NOT NULL DEFAULT ''," +
+	"  `password` varchar(255) CHARACTER SET utf8 NOT NULL DEFAULT ''," +
+	"  PRIMARY KEY (`id`)" +
+	") ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;"
+
 type User struct {
 	ID         int64
 	Username   string //用户名，*代表匿名用户

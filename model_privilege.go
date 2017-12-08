@@ -7,6 +7,17 @@ import (
 	"strings"
 )
 
+const createPrivilegeSql = "" +
+	"CREATE TABLE IF NOT EXISTS `privileges` (" +
+	"  `id` int(11) unsigned NOT NULL AUTO_INCREMENT," +
+	"  `user_id` int(255) NOT NULL," +
+	"  `host` varchar(255) NOT NULL DEFAULT ''," +
+	"  `action` varchar(255) NOT NULL DEFAULT ''," +
+	"  `repo` varchar(255) NOT NULL DEFAULT ''," +
+	"  `category` varchar(255) NOT NULL DEFAULT ''," +
+	"  PRIMARY KEY (`id`)" +
+	") ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;"
+
 type Privilege struct {
 	UserId   int64
 	Host     string //IP掩码匹配,多网段逗号分隔

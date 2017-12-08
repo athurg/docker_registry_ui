@@ -6,6 +6,14 @@ import (
 	"strconv"
 )
 
+const createConfigSql = "" +
+	"CREATE TABLE IF NOT EXISTS `configs` (" +
+	"  `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT," +
+	"  `key` VARCHAR(255) NOT NULL," +
+	"  `value` text NOT NULL," +
+	"  PRIMARY KEY (`id`)" +
+	") ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8"
+
 type Config struct {
 	Key   string
 	Value string
