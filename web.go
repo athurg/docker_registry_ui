@@ -40,17 +40,21 @@ func LoadWebServer(addr, registryBackendAddr string) error {
 		return fmt.Errorf("Docker Registry 地址解析失败: %s", err)
 	}
 
-	//对Registry对请求作代理
+	//Registry需要的认证请求处理
+	http.HandleFunc("/auth", AuthHandler)
+
+	//代理Registry的请求
 	registryProxy := httputil.NewSingleHostReverseProxy(registryBackendURL)
 	http.HandleFunc("/v2/", registryProxy.ServeHTTP)
 	http.HandleFunc("/v1/", registryProxy.ServeHTTP)
 
-	//其他请求自行处理
-	http.HandleFunc("/auth", AuthHandler)
-	http.HandleFunc("/api/repo/index.json", ApiRepoIndexHandler)
-	http.HandleFunc("/api/repo/show.json", ApiRepoShowHandler)
-	http.HandleFunc("/api/image/show.json", ApiImageShowHandler)
-	http.HandleFunc("/api/image/delete.json", ApiImageDeleteHandler)
+	//UI界面API
+	if enable, _ := GetBoolConfig("enable_ui"); enable {
+		http.HandleFunc("/api/repo/index.json", ApiRepoIndexHandler)
+		http.HandleFunc("/api/repo/show.json", ApiRepoShowHandler)
+		http.HandleFunc("/api/image/show.json", ApiImageShowHandler)
+		http.HandleFunc("/api/image/delete.json", ApiImageDeleteHandler)
+	}
 
 	//如果提供了HTTPS的密钥对，则监听为HTTPS，否则监听为HTTP
 	registryHttpsKeyBlock, _ := GetStringConfig("registry_https_key")

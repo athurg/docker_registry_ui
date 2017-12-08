@@ -15,6 +15,7 @@ var configNames = []string{
 	"registry_token_issuer",
 	"registry_token_service_name",
 	"registry_token_expiration",
+	"enable_ui",
 }
 
 func InitConfigTable(db *sql.DB) error {
@@ -65,4 +66,15 @@ func GetInt64Config(name string) (int64, error) {
 	}
 
 	return int64(v), nil
+}
+
+func GetBoolConfig(name string) (bool, error) {
+	var value string
+	row := dbConn.QueryRow("SELECT `value` FROM `configs` WHERE `name`=?", name)
+	err := row.Scan(&value)
+	if err == sql.ErrNoRows {
+		return false, err
+	}
+
+	return strings.ToLower(value) == "true", nil
 }
