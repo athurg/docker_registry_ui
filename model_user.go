@@ -10,13 +10,26 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-const createUserSql = "" +
-	"CREATE TABLE IF NOT EXISTS `users` (" +
-	"  `id` int(11) unsigned NOT NULL AUTO_INCREMENT," +
-	"  `username` varchar(255) CHARACTER SET utf8 NOT NULL DEFAULT ''," +
-	"  `password` varchar(255) CHARACTER SET utf8 NOT NULL DEFAULT ''," +
-	"  PRIMARY KEY (`id`)" +
-	") ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;"
+func InitUserTable(db *sql.DB) error {
+	createSql := "CREATE TABLE IF NOT EXISTS `users` ("
+	createSql += "  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,"
+	createSql += "  `username` varchar(255) CHARACTER SET utf8 NOT NULL DEFAULT '',"
+	createSql += "  `password` varchar(255) CHARACTER SET utf8 NOT NULL DEFAULT '',"
+	createSql += "  PRIMARY KEY (`id`),"
+	createSql += "  UNIQUE KEY `username` (`username`)"
+	createSql += ") ENGINE=InnoDB DEFAULT CHARSET=utf8"
+	if _, err := db.Exec(createSql); err != nil {
+		return err
+	}
+
+	initSql := "INSERT IGNORE INTO `users` (`id`, `username`, `password`)"
+	initSql += " VALUES (1, '*', 'anonymous_need_no_password')"
+	if _, err := db.Exec(initSql); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 type User struct {
 	ID         int64

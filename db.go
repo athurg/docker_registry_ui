@@ -28,15 +28,17 @@ func init() {
 		return
 	}
 
-	//创建三个表
-	if _, err = db.Exec(createUserSql); err != nil {
-		log.Fatalf("Fail to create users table: %s", err)
+	//初始化数据
+	if err := InitUserTable(db); err != nil {
+		log.Fatalf("Fail to init users table", err)
 	}
-	if _, err = db.Exec(createConfigSql); err != nil {
-		log.Fatalf("Fail to create configs table: %s", err)
+
+	if err := InitPrivilegeTable(db); err != nil {
+		log.Fatalf("Fail to init users table", err)
 	}
-	if _, err = db.Exec(createPrivilegeSql); err != nil {
-		log.Fatalf("Fail to create privileges table: %s", err)
+
+	if err := InitConfigTable(db); err != nil {
+		log.Fatalf("Fail to init users table", err)
 	}
 
 	dbConn = db

@@ -13,7 +13,7 @@ import (
 //镜像commit、命令
 func getImageInfo(repo, ref string) (registry.ManifestV2, registry.ImageConfig, error) {
 	resourceAction := ResourceActions{Type: "repository", Name: repo, Actions: []string{"pull"}}
-	tokenServiceName, _ := GetConfigAsString("registry_token_service_name")
+	tokenServiceName, _ := GetStringConfig("registry_token_service_name")
 	token, err := CreateToken("", tokenServiceName, []ResourceActions{resourceAction})
 	if err != nil {
 		return registry.ManifestV2{}, registry.ImageConfig{}, fmt.Errorf("创建Token错误: %s", err)
@@ -36,7 +36,7 @@ func ApiImageDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	tag := r.FormValue("tag")
 	repo := r.FormValue("repo")
 
-	tokenServiceName, _ := GetConfigAsString("registry_token_service_name")
+	tokenServiceName, _ := GetStringConfig("registry_token_service_name")
 	resourceAction := ResourceActions{Type: "repository", Name: repo, Actions: []string{"*"}}
 	token, err := CreateToken("", tokenServiceName, []ResourceActions{resourceAction})
 	if err != nil {

@@ -18,7 +18,7 @@ type ImageBaseInfo struct {
 }
 
 func getRepoTagList(repo string) ([]ImageBaseInfo, error) {
-	tokenServiceName, _ := GetConfigAsString("registry_token_service_name")
+	tokenServiceName, _ := GetStringConfig("registry_token_service_name")
 	resourceAction := ResourceActions{Type: "repository", Name: repo, Actions: []string{"pull"}}
 	token, err := CreateToken("", tokenServiceName, []ResourceActions{resourceAction})
 	if err != nil {
@@ -80,7 +80,7 @@ func ApiRepoShowHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getRepoList() ([]string, []int, error) {
-	tokenServiceName, _ := GetConfigAsString("registry_token_service_name")
+	tokenServiceName, _ := GetStringConfig("registry_token_service_name")
 	resourceAction := ResourceActions{Type: "registry", Name: "catalog", Actions: []string{"*"}}
 	token, err := CreateToken("", tokenServiceName, []ResourceActions{resourceAction})
 	if err != nil {
@@ -94,7 +94,7 @@ func getRepoList() ([]string, []int, error) {
 
 	tagCounts := make([]int, len(catalogInfo.Repositories))
 	for i, repo := range catalogInfo.Repositories {
-		tokenServiceName, _ := GetConfigAsString("registry_token_service_name")
+		tokenServiceName, _ := GetStringConfig("registry_token_service_name")
 		resourceAction := ResourceActions{Type: "repository", Name: repo, Actions: []string{"pull"}}
 		token, err := CreateToken("", tokenServiceName, []ResourceActions{resourceAction})
 		if err != nil {

@@ -53,8 +53,8 @@ func LoadWebServer(addr, registryBackendAddr string) error {
 	http.HandleFunc("/api/image/delete.json", ApiImageDeleteHandler)
 
 	//如果提供了HTTPS的密钥对，则监听为HTTPS，否则监听为HTTP
-	registryHttpsKeyBlock, _ := GetConfigAsString("registry_https_key")
-	registryHttpsCertBlock, _ := GetConfigAsString("registry_https_cert")
+	registryHttpsKeyBlock, _ := GetStringConfig("registry_https_key")
+	registryHttpsCertBlock, _ := GetStringConfig("registry_https_cert")
 	if registryHttpsKeyBlock == "" || registryHttpsCertBlock == "" {
 		log.Println("在", addr, "启动HTTP服务")
 		return http.ListenAndServe(addr, nil)
